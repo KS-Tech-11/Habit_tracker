@@ -77,8 +77,8 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 THEMES = {
     "light": {
-        "border": "\u2500",
-        "header": "\u250c\u2500\u2500\u2500",
+        "border": "─",
+        "header": "┌───",
         "title_bg": "\033[44m\033[97m",
         "title_fg": "\033[0m",
         "ok": "\033[32m",
@@ -88,8 +88,8 @@ THEMES = {
         "reset": "\033[0m",
     },
     "dark": {
-        "border": "\u2500",
-        "header": "\u250c\u2500\u2500\u2500",
+        "border": "─",
+        "header": "┌───",
         "title_bg": "\033[47m\033[30m",
         "title_fg": "\033[0m",
         "ok": "\033[92m",
@@ -161,10 +161,10 @@ def add_habit(conn: sqlite3.Connection, name: str) -> Optional[int]:
         )
         conn.commit()
         hid = c.lastrowid
-        print(f"{t('ok')}\u2713 Habit '{name}' added (ID {hid}).{t('reset')}")
+        print(f"{t('ok')}✓ Habit '{name}' added (ID {hid}).{t('reset')}")
         return hid
     except sqlite3.IntegrityError:
-        print(f"{t('err')}\u2717 Habit '{name}' already exists.{t('reset')}")
+        print(f"{t('err')}✗ Habit '{name}' already exists.{t('reset')}")
         return None
 
 
@@ -220,7 +220,7 @@ def show_habits(
     total = c.fetchone()[0]
 
     if limit and offset + limit < total:
-        print(f"{t('dim')}\u23a7 Page {offset//limit + 1} \u2014 {min(offset+limit, total)} of {total}{t('reset')}")
+        print(f"{t('dim')}⎧ Page {offset//limit + 1} — {min(offset+limit, total)} of {total}{t('reset')}")
 
     return rows
 
@@ -241,7 +241,7 @@ def today_pending(conn: sqlite3.Connection) -> None:
     rows = c.fetchall()
 
     if not rows:
-        print(f"\n{t('ok')}\u2605 Nothing pending \u2014 you've completed everything today!{t('reset')}")
+        print(f"\n{t('ok')}★ Nothing pending — you've completed everything today!{t('reset')}")
         return
 
     print(f"\n{t('header')}Today's Pending{t('reset')}")
@@ -263,7 +263,7 @@ def complete_habit(conn: sqlite3.Connection, habit_id: int, note: Optional[str] 
     row = c.fetchone()
 
     if not row:
-        print(f"{t('err')}\u2717 Habit ID {habit_id} not found.{t('reset')}")
+        print(f"{t('err')}✗ Habit ID {habit_id} not found.{t('reset')}")
         return False
 
     last_str, current_streak, max_streak = row
@@ -277,19 +277,19 @@ def complete_habit(conn: sqlite3.Connection, habit_id: int, note: Optional[str] 
         delta = (today - last_date).days
 
         if delta == 0:
-            print(f"{t('warn')}\u26a0 Already completed today!{t('reset')}")
+            print(f"{t('warn')}⚠ Already completed today!{t('reset')}")
             return False
         elif delta == 1:
             current_streak += 1
         elif delta <= grace + 1:
             # Within grace window: streak continues but doesn't grow
             print(
-                f"{t('warn')}\u26a0 Missed {delta - 1} day(s) "
+                f"{t('warn')}⚠ Missed {delta - 1} day(s) "
                 f"(within {grace}-day grace). Streak holds at {current_streak}.{t('reset')}"
             )
         else:
             print(
-                f"{t('err')}\u274c Missed {delta - 1} day(s). Streak reset to 1.{t('reset')}"
+                f"{t('err')}❌ Missed {delta - 1} day(s). Streak reset to 1.{t('reset')}"
             )
             current_streak = 1
     else:
@@ -309,8 +309,8 @@ def complete_habit(conn: sqlite3.Connection, habit_id: int, note: Optional[str] 
     conn.commit()
 
     print(
-        f"{t('ok')}\u2b50 Done! Streak: {current_streak}"
-        + (f" \u2605 Personal Best: {new_max}" if new_max > 1 else "")
+        f"{t('ok')}⭐ Done! Streak: {current_streak}"
+        + (f" ★ Personal Best: {new_max}" if new_max > 1 else "")
         + f"{t('reset')}"
     )
     if note:
@@ -325,7 +325,7 @@ def edit_habit(conn: sqlite3.Connection, habit_id: int, new_name: Optional[str] 
     row = c.fetchone()
 
     if not row:
-        print(f"{t('err')}\u2717 Habit ID {habit_id} not found.{t('reset')}")
+        print(f"{t('err')}✗ Habit ID {habit_id} not found.{t('reset')}")
         return False
 
     old_name = row["name"]
@@ -344,10 +344,10 @@ def edit_habit(conn: sqlite3.Connection, habit_id: int, new_name: Optional[str] 
     try:
         c.execute("UPDATE habits SET name = ? WHERE id = ?", (new_name, habit_id))
         conn.commit()
-        print(f"{t('ok')}\u2713 Renamed '{old_name}' \u2192 '{new_name}'.{t('reset')}")
+        print(f"{t('ok')}✓ Renamed '{old_name}' → '{new_name}'.{t('reset')}")
         return True
     except sqlite3.IntegrityError:
-        print(f"{t('err')}\u2717 Habit '{new_name}' already exists.{t('reset')}")
+        print(f"{t('err')}✗ Habit '{new_name}' already exists.{t('reset')}")
         return False
 
 
@@ -358,7 +358,7 @@ def delete_habit(conn: sqlite3.Connection, habit_id: int, force: bool = False) -
     row = c.fetchone()
 
     if not row:
-        print(f"{t('err')}\u2717 Habit ID {habit_id} not found.{t('reset')}")
+        print(f"{t('err')}✗ Habit ID {habit_id} not found.{t('reset')}")
         return False
 
     if not force:
@@ -371,7 +371,7 @@ def delete_habit(conn: sqlite3.Connection, habit_id: int, force: bool = False) -
 
     c.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
     conn.commit()
-    print(f"{t('ok')}\u2713 Deleted '{row['name']}'.{t('reset')}")
+    print(f"{t('ok')}✓ Deleted '{row['name']}'.{t('reset')}")
     return True
 
 
@@ -442,7 +442,7 @@ def export_csv(conn: sqlite3.Connection, path: Optional[str] = None) -> None:
         for c2 in completions:
             w.writerow(c2)
 
-    print(f"{t('ok')}\u2713 Exported to {path}{t('reset')}")
+    print(f"{t('ok')}✓ Exported to {path}{t('reset')}")
 
 
 def export_json(conn: sqlite3.Connection, path: Optional[str] = None) -> None:
@@ -468,7 +468,7 @@ def export_json(conn: sqlite3.Connection, path: Optional[str] = None) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    print(f"{t('ok')}\u2713 Exported to {path}{t('reset')}")
+    print(f"{t('ok')}✓ Exported to {path}{t('reset')}")
 
 
 # ---------------------------------------------------------------------------
@@ -531,7 +531,7 @@ def main() -> None:
                     note = prompt_note()
                     complete_habit(conn, hid, note)
                 except ValueError:
-                    print(f"{t('err')}\u2717 Please enter a valid number.{t('reset')}")
+                    print(f"{t('err')}✗ Please enter a valid number.{t('reset')}")
 
             elif choice == "5":
                 show_habits(conn)
@@ -539,7 +539,7 @@ def main() -> None:
                     hid = int(input("\nEnter habit ID to edit: "))
                     edit_habit(conn, hid)
                 except ValueError:
-                    print(f"{t('err')}\u2717 Please enter a valid number.{t('reset')}")
+                    print(f"{t('err')}✗ Please enter a valid number.{t('reset')}")
 
             elif choice == "6":
                 show_habits(conn)
@@ -547,7 +547,7 @@ def main() -> None:
                     hid = int(input("\nEnter habit ID to delete: "))
                     delete_habit(conn, hid)
                 except ValueError:
-                    print(f"{t('err')}\u2717 Please enter a valid number.{t('reset')}")
+                    print(f"{t('err')}✗ Please enter a valid number.{t('reset')}")
 
             elif choice == "7":
                 show_habits(conn)
@@ -557,7 +557,7 @@ def main() -> None:
                     d = int(days) if days else 30
                     habit_history(conn, hid, d)
                 except ValueError:
-                    print(f"{t('err')}\u2717 Please enter a valid number.{t('reset')}")
+                    print(f"{t('err')}✗ Please enter a valid number.{t('reset')}")
 
             elif choice == "8":
                 export_menu(conn)
@@ -570,7 +570,7 @@ def main() -> None:
                 break
 
             else:
-                print(f"{t('err')}\u2717 Invalid choice. Try again.{t('reset')}")
+                print(f"{t('err')}✗ Invalid choice. Try again.{t('reset')}")
 
             input("\nPress Enter to continue...")
 
@@ -601,21 +601,21 @@ def settings_menu(conn: sqlite3.Connection) -> None:
             cur = get_setting("theme", "light")
             nxt = "dark" if cur == "light" else "light"
             set_setting("theme", nxt)
-            print(f"{t('ok')}\u2713 Theme set to {nxt}.{t('reset')}")
+            print(f"{t('ok')}✓ Theme set to {nxt}.{t('reset')}")
 
         elif choice == "2":
             cur = get_setting("grace_days", "1")
             val = input(f"Grace days (currently {cur}): ").strip()
             if val.isdigit() and int(val) >= 0:
                 set_setting("grace_days", val)
-                print(f"{t('ok')}\u2713 Grace days set to {val}.{t('reset')}")
+                print(f"{t('ok')}✓ Grace days set to {val}.{t('reset')}")
             else:
-                print(f"{t('err')}\u2717 Enter a non-negative integer.{t('reset')}")
+                print(f"{t('err')}✗ Enter a non-negative integer.{t('reset')}")
 
         elif choice == "3":
             break
         else:
-            print(f"{t('err')}\u2717 Invalid.{t('reset')}")
+            print(f"{t('err')}✗ Invalid.{t('reset')}")
 
 
 if __name__ == "__main__":
